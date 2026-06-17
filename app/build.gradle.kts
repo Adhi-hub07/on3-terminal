@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.on3.terminal"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.on3.terminal"

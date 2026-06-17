@@ -80,7 +80,7 @@ class TermiteService : Service() {
             .setContentTitle("On3 Terminal")
             .setContentText("${sessions.size} session(s)")
             .setContentIntent(contentIntent)
-            .setSmallIcon(android.R.drawable.ic_menu_console)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setOngoing(true)
             .build()
     }

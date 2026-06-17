@@ -5,11 +5,11 @@ plugins {
 
 android {
     namespace = "com.on3.terminal.core"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
     }
 
     packaging {

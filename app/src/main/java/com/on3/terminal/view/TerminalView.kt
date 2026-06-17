@@ -134,16 +134,14 @@ class TerminalView @JvmOverloads constructor(
         return object : BaseInputConnection(this, true) {
             override fun finishComposingText(): Boolean {
                 super.finishComposingText()
-                sendTextToTerminal(editable)
-                editable.clear()
+                editable?.let { sendTextToTerminal(it); it.clear() }
                 return true
             }
 
             override fun commitText(text: CharSequence, newCursorPosition: Int): Boolean {
                 super.commitText(text, newCursorPosition)
                 if (emulator == null) return true
-                sendTextToTerminal(editable)
-                editable.clear()
+                editable?.let { sendTextToTerminal(it); it.clear() }
                 return true
             }
 
@@ -163,8 +161,13 @@ class TerminalView @JvmOverloads constructor(
                     val shift = readShiftKey?.invoke() == true
                     val ctrl = cp <= 31 && cp != 27
                     val codePoint = if (ctrl) {
-                        when (cp) { 31 -> '_'; 30 -> '^'; 29 -> ']'; 28 -> '\\'; else -> (cp + 96).toInt()
-                        } else { if (shift) Character.toUpperCase(cp) else cp }
+                        when (cp) {
+                            31 -> 95; 30 -> 94; 29 -> 93; 28 -> 92
+                            else -> cp + 96
+                        }
+                    } else {
+                        if (shift) Character.toUpperCase(cp) else cp
+                    }
                     inputCodePoint(KeyCharacterMap.VIRTUAL_KEYBOARD, if (ctrl) codePoint else cp, ctrl, false)
                     i++
                 }
@@ -290,7 +293,7 @@ class TerminalView @JvmOverloads constructor(
         val code = KeyHandler.getCode(keyCode, keyMod,
             term.isCursorKeysApplicationMode(), term.isKeypadApplicationMode())
         if (code == null) return false
-        session?.write(code)
+        session?.write(code!!)
         return true
     }
 

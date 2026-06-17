@@ -21,6 +21,22 @@ class TerminalEmulator(
         const val TERMINAL_CURSOR_STYLE_BLOCK = 0
         const val TERMINAL_CURSOR_STYLE_UNDERLINE = 1
         const val TERMINAL_CURSOR_STYLE_BAR = 2
+
+        const val ESC_NONE = 0
+        const val ESC = 1
+        const val ESC_POUND = 2
+        const val ESC_LEFT_PAREN = 3
+        const val ESC_RIGHT_PAREN = 4
+        const val ESC_CSI = 6
+        const val ESC_CSI_QUESTION = 7
+        const val ESC_PERCENT = 9
+        const val ESC_OSC = 10
+        const val ESC_OSC_ESC = 11
+        const val ESC_CSI_BIGGER = 12
+        const val ESC_CSI_DOLLAR = 14
+        const val ESC_CSI_SPACE = 15
+        const val ESC_CSI_ASTERIX = 16
+        const val ESC_CSI_DQUOTE = 17
     }
 
     private val mTranscriptRows = transcriptRows.coerceIn(TERMINAL_TRANSCRIPT_ROWS_MIN, TERMINAL_TRANSCRIPT_ROWS_MAX)
@@ -84,22 +100,6 @@ class TerminalEmulator(
     private val DECSET_BIT_MOUSE_PROTOCOL_SGR = 1 shl 9
     private val DECSET_BIT_BRACKETED_PASTE = 1 shl 10
     private val DECSET_BIT_LEFTRIGHT_MARGIN = 1 shl 11
-
-    private val ESC_NONE = 0
-    private val ESC = 1
-    private val ESC_POUND = 2
-    private val ESC_LEFT_PAREN = 3
-    private val ESC_RIGHT_PAREN = 4
-    private val ESC_CSI = 6
-    private val ESC_CSI_QUESTION = 7
-    private val ESC_PERCENT = 9
-    private val ESC_OSC = 10
-    private val ESC_OSC_ESC = 11
-    private val ESC_CSI_BIGGER = 12
-    private val ESC_CSI_DOLLAR = 14
-    private val ESC_CSI_SPACE = 15
-    private val ESC_CSI_ASTERIX = 16
-    private val ESC_CSI_DQUOTE = 17
 
     init {
         reset()
@@ -281,19 +281,19 @@ class TerminalEmulator(
         mContinueSequence = false
         when (mEscapeState) {
             ESC -> doEsc(b)
-            ESC_POUND -> { if (b == '8') mScreen.getLine(mCursorRow).clear(mStyle); mEscapeState = ESC_NONE }
-            ESC_LEFT_PAREN -> { mUseLineDrawingG0 = (b == '0'); mEscapeState = ESC_NONE }
-            ESC_RIGHT_PAREN -> { mUseLineDrawingG1 = (b == '0'); mEscapeState = ESC_NONE }
+            ESC_POUND -> { if (b == 0x38) mScreen.getLine(mCursorRow).clear(mStyle); mEscapeState = ESC_NONE }
+            ESC_LEFT_PAREN -> { mUseLineDrawingG0 = (b == 0x30); mEscapeState = ESC_NONE }
+            ESC_RIGHT_PAREN -> { mUseLineDrawingG1 = (b == 0x30); mEscapeState = ESC_NONE }
             ESC_CSI -> doCSI(b)
             ESC_CSI_QUESTION -> doCSIQuestion(b)
             ESC_CSI_BIGGER -> doCSIBigger(b)
             ESC_OSC -> doOSC(b)
-            ESC_OSC_ESC -> { if (b == '\\') doOSC(-1) else { doOSC(b); mEscapeState = ESC_OSC } }
+            ESC_OSC_ESC -> { if (b == 0x5C) doOSC(-1) else { doOSC(b); mEscapeState = ESC_OSC } }
             ESC_PERCENT -> { mEscapeState = ESC_NONE }
             ESC_CSI_SPACE -> {
                 val arg = getArg(0, 0)
                 when (b) {
-                    'q' -> mCursorStyle = when {
+                    0x71 -> mCursorStyle = when {
                         arg in 0..2 -> TERMINAL_CURSOR_STYLE_BLOCK
                         arg in 3..4 -> TERMINAL_CURSOR_STYLE_UNDERLINE
                         arg in 5..6 -> TERMINAL_CURSOR_STYLE_BAR
@@ -305,7 +305,7 @@ class TerminalEmulator(
             }
             ESC_CSI_ASTERIX -> mEscapeState = ESC_NONE
             ESC_CSI_DQUOTE -> {
-                if (b == 'q') {
+                if (b == 0x71) {
                     val arg = getArg(0, 0)
                     if (arg == 0 || arg == 2) mEffect = mEffect and TextStyle.CHARACTER_ATTRIBUTE_PROTECTED.inv()
                     else if (arg == 1) mEffect = mEffect or TextStyle.CHARACTER_ATTRIBUTE_PROTECTED
@@ -319,43 +319,44 @@ class TerminalEmulator(
 
     private fun doEsc(b: Int) {
         when (b) {
-            '7' -> { /* save cursor */ }
-            '8' -> { /* restore cursor */ }
-            'D' -> doLinefeed()
-            'E' -> { doLinefeed(); mCursorCol = 0 }
-            'H' -> { mCursorCol = 0; mCursorRow = 0; mAboutToAutoWrap = false }
-            'M' -> reverseIndex()
-            'Z' -> write("\u001B[?1;2c")
-            'c' -> reset()
-            '>' -> { /* normal keypad */ mCurrentDecSetFlags = mCurrentDecSetFlags and DECSET_BIT_APPLICATION_KEYPAD.inv() }
-            '=' -> { mCurrentDecSetFlags = mCurrentDecSetFlags or DECSET_BIT_APPLICATION_KEYPAD }
-            '#' -> mContinueSequence = true; mEscapeState = ESC_POUND
-            '(' -> mContinueSequence = true; mEscapeState = ESC_LEFT_PAREN
-            ')' -> mContinueSequence = true; mEscapeState = ESC_RIGHT_PAREN
-            '%' -> mEscapeState = ESC_PERCENT
-            '[' -> mContinueSequence = true; mArgIndex = -1; mEscapeState = ESC_CSI
-            ']' -> mContinueSequence = true; mOSCArgs.setLength(0); mEscapeState = ESC_OSC
-            '_' -> mEscapeState = ESC_NONE
-            '^' -> mEscapeState = ESC_NONE
-            'P' -> mEscapeState = ESC_NONE
-            else -> { /* unknown */ }
+            0x37 -> { }
+            0x38 -> { }
+            0x44 -> doLinefeed()
+            0x45 -> { doLinefeed(); mCursorCol = 0 }
+            0x48 -> { mCursorCol = 0; mCursorRow = 0; mAboutToAutoWrap = false }
+            0x4D -> reverseIndex()
+            0x5A -> write("\u001B[?1;2c")
+            0x63 -> reset()
+            0x3E -> { mCurrentDecSetFlags = mCurrentDecSetFlags and DECSET_BIT_APPLICATION_KEYPAD.inv() }
+            0x3D -> { mCurrentDecSetFlags = mCurrentDecSetFlags or DECSET_BIT_APPLICATION_KEYPAD }
+            0x23 -> { mContinueSequence = true; mEscapeState = ESC_POUND }
+            0x28 -> { mContinueSequence = true; mEscapeState = ESC_LEFT_PAREN }
+            0x29 -> { mContinueSequence = true; mEscapeState = ESC_RIGHT_PAREN }
+            0x25 -> { mEscapeState = ESC_PERCENT }
+            0x5B -> { mContinueSequence = true; mArgIndex = -1; mEscapeState = ESC_CSI }
+            0x5D -> { mContinueSequence = true; mOSCArgs.setLength(0); mEscapeState = ESC_OSC }
+            0x5F -> mEscapeState = ESC_NONE
+            0x5E -> mEscapeState = ESC_NONE
+            0x50 -> mEscapeState = ESC_NONE
+            else -> { }
         }
         if (mEscapeState != ESC) mContinueSequence = false
     }
 
+    private fun digitVal(b: Int) = b - 0x30
+
     private fun setArg(b: Int) {
-        if (b in '0'..'9') {
+        if (b in 0x30..0x39) {
             val index = if (mArgIndex < 0) { mArgIndex = 0; 0 } else mArgIndex
             if (index < mArgs.size) {
-                mArgs[index] = mArgs[index] * 10 + (b - '0')
+                mArgs[index] = mArgs[index] * 10 + digitVal(b)
             }
-        } else if (b == ';') {
+        } else if (b == 0x3B) {
             if (mArgIndex < 0) mArgIndex = 0
             mArgIndex++
             if (mArgIndex < mArgs.size) mArgs[mArgIndex] = 0
         } else {
-            // Parameter byte but not digit/semicolon - might be ':' or other
-            if (b == ':') { /* sub-parameter, skip for now */ }
+            if (b == 0x3A) { }
             mContinueSequence = true
         }
     }
@@ -364,10 +365,10 @@ class TerminalEmulator(
         when {
             b in 0x30..0x3F -> setArg(b)
             b in 0x20..0x2F -> {
-                if (b == ' ') { mEscapeState = ESC_CSI_SPACE; mContinueSequence = true }
-                else if (b == '*') { mEscapeState = ESC_CSI_ASTERIX; mContinueSequence = true }
-                else if (b == '"') { mEscapeState = ESC_CSI_DQUOTE; mContinueSequence = true }
-                else if (b == '$') { mEscapeState = ESC_CSI_DOLLAR; mContinueSequence = true }
+                if (b == 0x20) { mEscapeState = ESC_CSI_SPACE; mContinueSequence = true }
+                else if (b == 0x2A) { mEscapeState = ESC_CSI_ASTERIX; mContinueSequence = true }
+                else if (b == 0x22) { mEscapeState = ESC_CSI_DQUOTE; mContinueSequence = true }
+                else if (b == 0x24) { mEscapeState = ESC_CSI_DOLLAR; mContinueSequence = true }
                 else mEscapeState = ESC_NONE
             }
             else -> handleCSICommand(b)
@@ -377,7 +378,7 @@ class TerminalEmulator(
     private fun doCSIQuestion(b: Int) {
         when {
             b in 0x30..0x3F -> setArg(b)
-            b == '$' -> { mEscapeState = ESC_CSI_DOLLAR; mContinueSequence = true }
+            b == 0x24 -> { mEscapeState = ESC_CSI_DOLLAR; mContinueSequence = true }
             else -> handleCSIQuestionCommand(b)
         }
     }
@@ -395,67 +396,67 @@ class TerminalEmulator(
 
     private fun handleCSICommand(b: Int) {
         when (b) {
-            '@' -> insertChars(getArg(0, 1))
-            'A' -> cursorUp(getArg(0, 1))
-            'B' -> cursorDown(getArg(0, 1))
-            'C' -> cursorRight(getArg(0, 1))
-            'D' -> cursorLeft(getArg(0, 1))
-            'E' -> cursorDown(getArg(0, 1)); mCursorCol = mLeftMargin
-            'F' -> cursorUp(getArg(0, 1)); mCursorCol = mLeftMargin
-            'G' -> mCursorCol = (getArg(0, 1) - 1).coerceIn(mLeftMargin, mRightMargin - 1)
-            'H', 'f' -> {
+            0x40 -> insertChars(getArg(0, 1))
+            0x41 -> cursorUp(getArg(0, 1))
+            0x42 -> cursorDown(getArg(0, 1))
+            0x43 -> cursorRight(getArg(0, 1))
+            0x44 -> cursorLeft(getArg(0, 1))
+            0x45 -> { cursorDown(getArg(0, 1)); mCursorCol = mLeftMargin }
+            0x46 -> { cursorUp(getArg(0, 1)); mCursorCol = mLeftMargin }
+            0x47 -> mCursorCol = (getArg(0, 1) - 1).coerceIn(mLeftMargin, mRightMargin - 1)
+            0x48, 0x66 -> {
                 val row = (getArg(0, 1) - 1).coerceIn(0, mRows - 1)
                 val col = (getArg(1, 1) - 1).coerceIn(mLeftMargin, mRightMargin - 1)
                 mCursorRow = row; mCursorCol = col; mAboutToAutoWrap = false
             }
-            'J' -> eraseDisplay(getArg(0, 0))
-            'K' -> eraseLine(getArg(0, 0))
-            'L' -> insertLines(getArg(0, 1))
-            'M' -> deleteLines(getArg(0, 1))
-            'P' -> deleteChars(getArg(0, 1))
-            'S' -> scrollUp(getArg(0, 1))
-            'T' -> scrollDown(getArg(0, 1))
-            'X' -> eraseChars(getArg(0, 1))
-            'Z' -> mCursorCol = prevTabStop(getArg(0, 1))
-            '`' -> mCursorCol = (getArg(0, 1) - 1).coerceIn(mLeftMargin, mRightMargin - 1)
-            'a' -> cursorRight(getArg(0, 1))
-            'b' -> repeatChar(getArg(0, 1))
-            'c' -> write("\u001B[?1;2c")
-            'd' -> mCursorRow = (getArg(0, 1) - 1).coerceIn(0, mRows - 1)
-            'e' -> cursorDown(getArg(0, 1))
-            'g' -> {
+            0x4A -> eraseDisplay(getArg(0, 0))
+            0x4B -> eraseLine(getArg(0, 0))
+            0x4C -> insertLines(getArg(0, 1))
+            0x4D -> deleteLines(getArg(0, 1))
+            0x50 -> deleteChars(getArg(0, 1))
+            0x53 -> scrollUp(getArg(0, 1))
+            0x54 -> scrollDown(getArg(0, 1))
+            0x58 -> eraseChars(getArg(0, 1))
+            0x5A -> mCursorCol = prevTabStop(getArg(0, 1))
+            0x60 -> mCursorCol = (getArg(0, 1) - 1).coerceIn(mLeftMargin, mRightMargin - 1)
+            0x61 -> cursorRight(getArg(0, 1))
+            0x62 -> repeatChar(getArg(0, 1))
+            0x63 -> write("\u001B[?1;2c")
+            0x64 -> mCursorRow = (getArg(0, 1) - 1).coerceIn(0, mRows - 1)
+            0x65 -> cursorDown(getArg(0, 1))
+            0x67 -> {
                 val arg = getArg(0, 0)
                 if (arg == 3) { mTabStop.fill(false) }
                 else if (arg == 0 && mCursorCol < mColumns) mTabStop[mCursorCol] = false
             }
-            'h' -> setDecMode(getArg(0, 0), true)
-            'l' -> setDecMode(getArg(0, 0), false)
-            'm' -> setCharacterAttributes()
-            'n' -> {
+            0x68 -> setDecMode(getArg(0, 0), true)
+            0x6C -> setDecMode(getArg(0, 0), false)
+            0x6D -> setCharacterAttributes()
+            0x6E -> {
                 when (getArg(0, 0)) {
                     5 -> write("\u001B[0n")
                     6 -> write("\u001B[${mCursorRow + 1};${mCursorCol + 1}R")
                 }
             }
-            'q' -> { /* LED - ignore */ }
-            'r' -> setScrollingRegion()
-            's' -> { /* save cursor */ }
-            'u' -> { /* restore cursor */ }
-            'x' -> { /* DECREQTPARM - ignore */ }
-            else -> { /* unknown */ }
+            0x71 -> { }
+            0x72 -> setScrollingRegion()
+            0x73 -> { }
+            0x75 -> { }
+            0x78 -> { }
+            else -> { }
         }
     }
 
     private fun handleCSIQuestionCommand(b: Int) {
         when (b) {
-            'h' -> setDecPrivateMode(getArg(0, 0), true)
-            'l' -> setDecPrivateMode(getArg(0, 0), false)
-            'c' -> write("\u001B[?1;2c")
-            'n' -> { if (getArg(0, 0) == 15) write("\u001B[?13n") }
-            's' -> { /* save DEC mode */ }
-            'r' -> { /* restore DEC mode */ }
-            't' -> { /* xterm window ops */ }
-            else -> { /* unknown */ }
+            0x68 -> setDecPrivateMode(getArg(0, 0), true)
+            0x6C -> setDecPrivateMode(getArg(0, 0), false)
+            0x63 -> write("\u001B[?1;2c")
+            0x6E -> { if (getArg(0, 0) == 15) write("\u001B[?13n") }
+            0x73 -> { }
+            0x72 -> { }
+            0x74 -> { }
+            else -> { }
         }
     }
 
@@ -518,7 +519,8 @@ class TerminalEmulator(
 
     private fun setCharacterAttributes() {
         val count = minOf(mArgIndex + 1, mArgs.size)
-        for (i in 0 until count) {
+        var i = 0
+        while (i < count) {
             val attr = mArgs[i]
             when (attr) {
                 0 -> { mForeColor = TextStyle.COLOR_INDEX_FOREGROUND; mBackColor = TextStyle.COLOR_INDEX_BACKGROUND; mEffect = 0 }
@@ -539,14 +541,15 @@ class TerminalEmulator(
                 28 -> mEffect = mEffect and TextStyle.CHARACTER_ATTRIBUTE_INVISIBLE.inv()
                 29 -> mEffect = mEffect and TextStyle.CHARACTER_ATTRIBUTE_STRIKETHROUGH.inv()
                 in 30..37 -> mForeColor = attr - 30
-                38 -> { if (i + 1 < count) { val next = mArgs[i + 1]; if (next == 5 && i + 2 < count) { mForeColor = mArgs[i + 2]; i += 2 } else if (next == 2 && i + 4 < count) { mForeColor = 0xFF000000 or (mArgs[i + 2] shl 16) or (mArgs[i + 3] shl 8) or mArgs[i + 4]; i += 4 } } }
+                38 -> { if (i + 1 < count) { val next = mArgs[i + 1]; if (next == 5 && i + 2 < count) { mForeColor = mArgs[i + 2]; i += 2 } else if (next == 2 && i + 4 < count) { mForeColor = 0xFF000000.toInt() or (mArgs[i + 2] shl 16) or (mArgs[i + 3] shl 8) or mArgs[i + 4]; i += 4 } } }
                 39 -> mForeColor = TextStyle.COLOR_INDEX_FOREGROUND
                 in 40..47 -> mBackColor = attr - 40
-                48 -> { if (i + 1 < count) { val next = mArgs[i + 1]; if (next == 5 && i + 2 < count) { mBackColor = mArgs[i + 2]; i += 2 } else if (next == 2 && i + 4 < count) { mBackColor = 0xFF000000 or (mArgs[i + 2] shl 16) or (mArgs[i + 3] shl 8) or mArgs[i + 4]; i += 4 } } }
+                48 -> { if (i + 1 < count) { val next = mArgs[i + 1]; if (next == 5 && i + 2 < count) { mBackColor = mArgs[i + 2]; i += 2 } else if (next == 2 && i + 4 < count) { mBackColor = 0xFF000000.toInt() or (mArgs[i + 2] shl 16) or (mArgs[i + 3] shl 8) or mArgs[i + 4]; i += 4 } } }
                 49 -> mBackColor = TextStyle.COLOR_INDEX_BACKGROUND
                 in 90..97 -> mForeColor = attr - 90 + 8
                 in 100..107 -> mBackColor = attr - 100 + 8
             }
+            i++
         }
     }
 

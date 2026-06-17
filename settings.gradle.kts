@@ -1,16 +1,16 @@
 pluginManagement {
     repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
+        maven { url = uri("http://127.0.0.1:48081/google/") }
+        maven { url = uri("http://127.0.0.1:48081/central/") }
+        maven { url = uri("http://127.0.0.1:48081/plugins/") }
     }
 }
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
-        mavenCentral()
+        maven { url = uri("http://127.0.0.1:48081/google/") }
+        maven { url = uri("http://127.0.0.1:48081/central/") }
     }
 }
 

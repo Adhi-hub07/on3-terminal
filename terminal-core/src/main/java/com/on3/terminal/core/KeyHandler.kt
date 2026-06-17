@@ -41,7 +41,7 @@ object KeyHandler {
         (KeyEvent.KEYCODE_PAGE_UP to 0) to "\u001B[5~",
         (KeyEvent.KEYCODE_PAGE_DOWN to 0) to "\u001B[6~",
         (KeyEvent.KEYCODE_HOME to 0) to "\u001B[H",
-        (KeyEvent.KEYCODE_END to 0) to "\u001B[F",
+        (KeyEvent.KEYCODE_MOVE_END to 0) to "\u001B[F",
         (KeyEvent.KEYCODE_INSERT to 0) to "\u001B[2~",
         (KeyEvent.KEYCODE_FORWARD_DEL to 0) to "\u001B[3~",
         (KeyEvent.KEYCODE_TAB to 0) to "\t",

@@ -63,39 +63,39 @@ class TerminalSession(
 
         val fd = wrapFileDescriptor(terminalFileDescriptor)
 
-        Thread("SessionInput[pid=$shellPid]") {
+        Thread(Runnable {
             try {
                 FileInputStream(fd).use { input ->
                     val buffer = ByteArray(4096)
                     while (true) {
                         val read = input.read(buffer)
-                        if (read == -1) return@Thread
-                        if (!processToTerminalQueue.write(buffer, 0, read)) return@Thread
+                        if (read == -1) return@Runnable
+                        if (!processToTerminalQueue.write(buffer, 0, read)) return@Runnable
                         mainThreadHandler.sendEmptyMessage(MSG_NEW_INPUT)
                     }
                 }
             } catch (_: Exception) {}
-        }.start()
+        }, "SessionInput[pid=$shellPid]").start()
 
-        Thread("SessionOutput[pid=$shellPid]") {
+        Thread(Runnable {
             try {
                 FileOutputStream(fd).use { output ->
                     val buffer = ByteArray(4096)
                     while (true) {
                         val bytes = terminalToProcessQueue.read(buffer, true)
-                        if (bytes == -1) return@Thread
+                        if (bytes == -1) return@Runnable
                         output.write(buffer, 0, bytes)
                     }
                 }
             } catch (_: Exception) {}
-        }.start()
+        }, "SessionOutput[pid=$shellPid]").start()
 
-        Thread("SessionWaiter[pid=$shellPid]") {
+        Thread(Runnable {
             val exitCode = TerminalJNI.waitFor(shellPid)
             mainThreadHandler.sendMessage(
                 mainThreadHandler.obtainMessage(MSG_PROCESS_EXITED, exitCode)
             )
-        }.start()
+        }, "SessionWaiter[pid=$shellPid]").start()
     }
 
     fun updateSize(columns: Int, rows: Int, cellWidthPx: Int, cellHeightPx: Int) {
@@ -153,7 +153,7 @@ class TerminalSession(
 
     fun getTitle(): String? = emulator?.mTitle
 
-    fun getCwd(): String? {
+    fun getProcessCwd(): String? {
         if (shellPid < 1) return null
         return try {
             val symlink = "/proc/$shellPid/cwd/"

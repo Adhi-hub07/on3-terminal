@@ -94,7 +94,7 @@ class TerminalBuffer(
                     }
                     val fore = TextStyle.decodeForeColor(style)
                     val back = TextStyle.decodeBackColor(style)
-                    line.mStyles[col] = TextStyle.encode(fore, back, effect)
+                    line.setStyle(col, TextStyle.encode(fore, back, effect))
                 }
             }
         }

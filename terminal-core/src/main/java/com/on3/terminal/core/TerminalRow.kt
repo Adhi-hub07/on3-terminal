@@ -9,6 +9,7 @@ class TerminalRow(private val columns: Int) {
     fun getSpaceUsed(): Int = mSpaceUsed
 
     fun getStyle(column: Int): Long = mStyles[column]
+    fun setStyle(column: Int, style: Long) { mStyles[column] = style }
 
     fun setChar(column: Int, codePoint: Int, style: Long, wcWidth: Int) {
         val index = if (column < mSpaceUsed) column else { mSpaceUsed = column; column }
